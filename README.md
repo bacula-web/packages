@@ -1,0 +1,1 @@
+Bacula-Web packaging resources
