@@ -4,14 +4,18 @@ Name:		bacula-web
 Provides:	bacula-web-%{version}
 Release:	1
 License:	GPLv2
+Version:	%{version}
 
 Group:		Applications/System
 URL:		http://www.bacula-web.org/
 
-Source0:	http://www.bacula-web.org/tl_files/downloads/%{name}-%{version}.tar.gz
-Requires: 	php >= 5.6.0
+#Source0:	https://github.com/%{name}/%{name}/archive/refs/tags/v%{version}.tar.gz
+Source0:	%{name}-%{version}.tar.gz
+
+BuildRequires:  composer
+
+Requires: 	php >= 7.4.0
 Requires:	php-common
-Requires:	php-gd
 Requires:	php-gettext
 Requires:	php-pdo
 Requires:	webserver(php)
@@ -21,8 +25,9 @@ BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_httpdroot	/var/www/html
 %define		_appdir		%{_httpdroot}/%{name}
+%define		_wwwpubdir	%{_httpdroot}/%{name}/public
 %define		_confdir	%{_appdir}/application/config
-%define		_cachedir	%{_appdir}/application/view/cache
+%define		_cachedir	%{_appdir}/application/views/cache
 %define		_localedir	%{_appdir}/application/locale
 %define		_docsdir	%{_appdir}/docs
 
@@ -32,11 +37,26 @@ summarized view of your bacula's backup infrastructure. It obtain his
 information from your bacula catalog's database.
 
 %prep
-%setup -qc
+%setup -c -D
 
 %install
 %{__install} -m 755 -d $RPM_BUILD_ROOT%{_httpdroot}/%{name}
-%{__cp} -dR * $RPM_BUILD_ROOT%{_httpdroot}/%{name}
+%{__cp} -dR %{name}-%{version}/* $RPM_BUILD_ROOT%{_httpdroot}/%{name}
+
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/CHANGELOG.md
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/CODE_OF_CONDUCT.md
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/CONTRIBUTING.md
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/LICENSE
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/README.md
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/SECURITY.md
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/phpunit.xml
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/release-please-config.json
+%{__rm} $RPM_BUILD_ROOT%{_httpdroot}/%{name}/sonar-project.properties
+%{__rm} -rf $RPM_BUILD_ROOT%{_httpdroot}/%{name}/tests
+
+cd $RPM_BUILD_ROOT%{_httpdroot}/%{name} && composer install --no-dev
+
+%{__rm} -r $RPM_BUILD_ROOT%{_httpdroot}/%{name}/composer.*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -54,20 +74,24 @@ fi
 
 %defattr(644,root,root,755)
 
-%config %{_confdir}/config.php.sample
+#%config %{_confdir}/config.php
 
 %docdir %{_docsdir}
 %{_docsdir}
 
 %dir %{_appdir}
-%{_appdir}/backupjob-report.php
-%{_appdir}/client-report.php
-%{_appdir}/index.php
-%{_appdir}/jobs.php
-%{_appdir}/pools.php
-%{_appdir}/test.php
-%{_appdir}/joblogs.php
+%{_appdir}/public/index.php
+%{_appdir}/public/.htaccess
+%{_appdir}/console.php
+%{_appdir}/bwc
+%{_appdir}/vendor
 
+%dir %{_wwwpubdir}
+%{_wwwpubdir}/css
+%{_wwwpubdir}/js
+%{_wwwpubdir}/img
+%{_wwwpubdir}/webfonts
+%{_wwwpubdir}/fonts
 
 #%dir %{_appdir}/core
 #%{_appdir}/core/bweb.class.php
@@ -86,9 +110,9 @@ fi
 #%lang(nl) %{_localedir}/nl_NL
 #%lang(br) %{_localedir}/pt_BR
 
-%dir %attr(775,http,http) %{_cachedir}
+#%dir %attr(775,http,http) %{_cachedir}
 
-%define date	%(echo `LC_ALL="C" date +"%a %b %d %Y"`)
+%define date %(echo `LC_ALL="C" date +"%a %b %d %Y"`)
 
 %changelog
 
